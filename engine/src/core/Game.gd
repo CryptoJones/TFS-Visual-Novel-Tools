@@ -385,9 +385,11 @@ func _build_explore_layer() -> void:
 	_fsize(_objective_lbl, 20)
 	_explore_layer.add_child(_objective_lbl)
 	_toast_lbl = Label.new()
-	_toast_lbl.position = Vector2(VIEW_X, 300)
-	_toast_lbl.size = Vector2(VIEW_W, 72)
+	_toast_lbl.position = Vector2(VIEW_X, 264)
+	_toast_lbl.size = Vector2(VIEW_W, 168)
 	_toast_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_toast_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_toast_lbl.add_theme_color_override("font_color", UITheme.ACCENT)
 	_toast_lbl.add_theme_color_override("font_outline_color", UITheme.BG)
 	_toast_lbl.add_theme_constant_override("outline_size", 10)
@@ -585,6 +587,124 @@ func _open_quest_log() -> void:
 			var mark := "✓" if i < cur else ("▸" if i == cur else "·")
 			_menu_label("  %s  %s" % [mark, str(steps[i].get("text", ""))],  i > cur)
 	_menu_button("« Back", _go_explore)
+
+
+# ---------------------------------------------------------------- hint
+
+## "Where do I go, and what do I do?" — resolve the current quest step to a room
+## and a concrete action, then breadcrumb the way there as compass directions.
+func _hint() -> void:
+	if _state != State.EXPLORE:
+		return
+	var ch := _current_chapter()
+	var qid := str(ch.get("quest", ""))
+	if qid == "":
+		_toast("No quest is active right now.", 1.25)
+		return
+	if _quests.is_complete(GameState, qid):
+		_toast("Chapter goal complete — hit « Conclude chapter ».", 1.75)
+		return
+	var ss := _quests.steps(qid)
+	var step: Dictionary = ss[_quests.current_step(GameState, qid)]
+	var objective := str(step.get("text", ""))
+	var target := _resolve_flag_target(str(step.get("flag", "")))
+	if target.is_empty():
+		_toast("Hint:  %s" % objective, 2.0)
+		return
+	var room_id := str(target["room"])
+	var action := str(target["action"])
+	if room_id == GameState.current_room:
+		_toast("You're in the right room  →  %s\n%s" % [action, objective], 2.0)
+		return
+	var dirs := _path_dirs(GameState.current_room, room_id)
+	if dirs.is_empty():
+		_toast("Hint:  %s\n%s" % [action, objective], 2.0)
+		return
+	var arrows := str(dirs[0])
+	for k in range(1, dirs.size()):
+		arrows += ", " + str(dirs[k])
+	_toast("%s  →  %s\n%s" % [arrows, action, objective], 2.25)
+
+## Find the room + concrete action that will set `flag` (room entry, a pickup,
+## an NPC conversation, or a cracked database).
+func _resolve_flag_target(flag: String) -> Dictionary:
+	if flag == "":
+		return {}
+	for rid in _world.rooms:
+		var ra: Dictionary = _world.rooms[rid]
+		if str(ra.get("on_enter_flag", "")) == flag:
+			return {"room": rid, "action": "Go to %s" % str(ra.get("name", rid))}
+		for p in ra.get("pickups", []):
+			var iid := str(p.get("item", ""))
+			if flag == "took_" + iid or flag == "granted_" + iid:
+				return {"room": rid, "action": str(p.get("label", "Take " + _catalog.item_name(iid)))}
+	for rid2 in _world.rooms:
+		var rb: Dictionary = _world.rooms[rid2]
+		for npc in rb.get("npcs", []):
+			var nid := str(npc)
+			var nd = _load_json(NPC_DIR + nid + ".json")
+			if nd == null or typeof(nd) != TYPE_DICTIONARY:
+				continue
+			for node_id in nd.get("nodes", {}):
+				var node: Dictionary = nd["nodes"][node_id]
+				var g := str(node.get("grant", ""))
+				if str(node.get("set_flag", "")) == flag or (g != "" and flag == "granted_" + g):
+					return {"room": rid2, "npc": nid, "action": "Talk to %s" % str(nd.get("name", nid))}
+	if flag.begins_with("cracked_"):
+		var mra := _first_matrix_room()
+		if mra != "":
+			return {"room": mra, "action": "Jack in and crack %s" % str(_matrix.db(flag.substr(8)).get("name", "the target"))}
+	for d in _matrix.for_chapter(GameState.current_chapter):
+		if str(d.get("set_flag", "")) == flag:
+			var mrb := _first_matrix_room()
+			if mrb != "":
+				return {"room": mrb, "action": "Jack in and crack %s" % str(d.get("name", "the target"))}
+	return {}
+
+## The NPC the current quest step needs to be talked to (or "" if the step is
+## not a conversation) — kept visible so declutter never hides a required NPC.
+func _current_step_npc() -> String:
+	var ch := _current_chapter()
+	var qid := str(ch.get("quest", ""))
+	if qid == "" or _quests.is_complete(GameState, qid):
+		return ""
+	var ss := _quests.steps(qid)
+	var flag := str(ss[_quests.current_step(GameState, qid)].get("flag", ""))
+	return str(_resolve_flag_target(flag).get("npc", ""))
+
+func _first_matrix_room() -> String:
+	for rid in _world.rooms:
+		if _world.rooms[rid].get("matrix", false):
+			return str(rid)
+	return ""
+
+## Breadcrumb the shortest compass route between two rooms (BFS over open exits;
+## a door still locked behind a flag is skipped so we never route through it).
+func _path_dirs(from_id: String, to_id: String) -> Array:
+	if from_id == to_id:
+		return []
+	var abbr := { "north": "N", "south": "S", "east": "E", "west": "W" }
+	var came := { from_id: [] }
+	var queue: Array = [from_id]
+	while not queue.is_empty():
+		var cur: String = queue.pop_front()
+		var ex: Dictionary = _world.exits(cur)
+		for dir in ["west", "north", "south", "east"]:
+			if not ex.has(dir):
+				continue
+			var dest := str(ex[dir])
+			if came.has(dest):
+				continue
+			var dr: Dictionary = _world.room(dest)
+			if dest != to_id and dr.has("requires_flag") and not GameState.has_flag(str(dr["requires_flag"])):
+				continue
+			var path: Array = came[cur].duplicate()
+			path.append(abbr.get(dir, dir))
+			if dest == to_id:
+				return path
+			came[dest] = path
+			queue.append(dest)
+	return []
 
 
 # ---------------------------------------------------------------- NET terminal
@@ -975,8 +1095,13 @@ func _rebuild_buttons(r: Dictionary) -> void:
 			b.disabled = true
 			b.tooltip_text = "No exit %s" % dir
 		_button_bar.add_child(b)
-	# Talk actions for NPCs in the room.
+	# Talk actions for NPCs in the room. A conversation you have already finished
+	# drops its button to save space — unless it is the NPC the current quest step
+	# needs, which always stays reachable.
+	var need_npc := _current_step_npc()
 	for npc in r.get("npcs", []):
+		if GameState.has_flag("spoke_" + str(npc)) and str(npc) != need_npc:
+			continue
 		var b := Button.new()
 		b.text = "Talk: %s" % _npc_label(str(npc))
 		b.pressed.connect(_go_dialog.bind(str(npc)))
@@ -1030,6 +1155,12 @@ func _rebuild_buttons(r: Dictionary) -> void:
 	lb.text = "Load"
 	lb.pressed.connect(_do_load)
 	_button_bar.add_child(lb)
+	var hintb := Button.new()
+	hintb.text = "?  Give Hint"
+	hintb.tooltip_text = "Where do I go, and what do I do next?"
+	hintb.add_theme_color_override("font_color", UITheme.ACCENT)
+	hintb.pressed.connect(_hint)
+	_button_bar.add_child(hintb)
 	var gear := Button.new()
 	gear.text = "⚙"
 	gear.tooltip_text = "Settings"
@@ -1270,15 +1401,15 @@ func _do_quit() -> void:
 	get_tree().quit()
 
 ## Briefly flash a centered message over the scene, then fade it out.
-func _toast(msg: String) -> void:
+func _toast(msg: String, hold := 1.2) -> void:
 	if _toast_lbl == null:
 		return
 	_toast_lbl.text = msg
 	_toast_lbl.modulate.a = 1.0
 	_toast_lbl.visible = true
 	var tw := create_tween()
-	tw.tween_interval(1.2)
-	tw.tween_property(_toast_lbl, "modulate:a", 0.0, 0.8)
+	tw.tween_interval(hold)
+	tw.tween_property(_toast_lbl, "modulate:a", 0.0, 0.4)
 	tw.tween_callback(func() -> void: _toast_lbl.visible = false)
 
 
@@ -1326,7 +1457,10 @@ func _on_dialog_option(raw_index: int) -> void:
 		_refresh_dialog()
 
 func _end_dialog() -> void:
+	if _dialog_npc != "":
+		GameState.set_flag("spoke_" + _dialog_npc)
 	_go_explore()
+
 
 
 # ---------------------------------------------------------------- input
@@ -1365,6 +1499,8 @@ func _handle_explore_key(keycode: int) -> void:
 			_open_inventory()
 		KEY_Q:
 			_open_quest_log()
+		KEY_H:
+			_hint()
 		KEY_F5:
 			_quicksave()
 		KEY_F9:

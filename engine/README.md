@@ -16,6 +16,9 @@ JSON, and you have a game.
   exits are dimmed, not hidden).
 - **Branching dialog**, an **inventory / shops / economy**, an optional
   **cyberspace** mini-game, and an optional **NET** terminal.
+- **Give Hint** — a per-room button (and the `H` key) that maps the compass
+  route to the current objective and names the action to take; finished
+  conversations drop their Talk button to keep the action bar tidy.
 - **Autosave on by default** (rolling slot) plus manual multi-slot saves,
   quicksave/quickload, and a Settings panel (music + autosave toggles).
 - A full-bleed **title cover** with the game name overlaid, and a quiet
