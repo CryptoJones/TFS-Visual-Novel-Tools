@@ -1,0 +1,17 @@
+# Godot 4 import cache + generated files
+.godot/
+*.import
+
+# Exports
+build/
+*.pck
+*.exe
+*.x86_64
+*.dmg
+*.zip
+
+# OS noise
+.DS_Store
+
+# Godot 4 resource UID sidecars (regenerated on import)
+*.uid

@@ -1,0 +1,6 @@
+{
+	"_note": "NET news feed, shown when a room sets \"net\": true. Replace with your own prose.",
+	"news": [
+		{ "headline": "Demo Dispatch", "body": "Placeholder NET news. A room with \"net\": true opens this feed in-game. Swap in your own headlines and bodies." }
+	]
+}

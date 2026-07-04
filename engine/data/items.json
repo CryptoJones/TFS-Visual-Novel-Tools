@@ -1,0 +1,12 @@
+{
+	"_note": "Item catalog. type: hardware = enables the cyberspace 'Jack In' action; software = usable in cyberspace; misc/key = story items. key:true means it can't be sold.",
+	"items": {
+		"brass_key": {
+			"name": "Brass Key",
+			"type": "key",
+			"key": true,
+			"price": 0,
+			"desc": "A heavy brass key, worn smooth. It must open something."
+		}
+	}
+}

@@ -1,0 +1,24 @@
+{
+	"_note": "Demo campaign for the TFS Visual Novel engine. Replace this file with your own book's chapters. 'game' is the title-screen name (split on an em dash into title + subtitle); 'dedication' shows as a fade-in card before the title (leave empty to skip it).",
+	"game": "UNTITLED ADVENTURE — A Demo",
+	"dedication": "Built with the TFS Visual Novel Tools engine.",
+	"chapters": [
+		{
+			"id": "demo",
+			"title": "The Locked Room",
+			"pov": "traveler",
+			"pov_name": "The Traveler",
+			"pov_desc": "A visitor with questions and no easy answers.",
+			"rooms": "res://data/rooms/demo.json",
+			"quest": "q_demo",
+			"intro": [
+				"This is the demo campaign — two rooms, one guide, one key.",
+				"It exists to prove the loop runs: title, chapter select, explore, dialog, inventory, save. Swap in your own data/ and assets/ to make it yours."
+			],
+			"outro": [
+				"You took the key. That's the whole loop — rooms, exits, dialog, an item, a completed quest.",
+				"Now open data/ and build your own."
+			]
+		}
+	]
+}

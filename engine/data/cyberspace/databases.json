@@ -1,0 +1,4 @@
+{
+	"_note": "Optional cyberspace targets, reached from a room with \"matrix\": true when the player owns a hardware item. Each db: id, name, ice (strength), optional bg, requires / requires_flag / set_flag, and content shown on a successful crack. None in the demo.",
+	"databases": []
+}

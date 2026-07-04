@@ -1,0 +1,14 @@
+{
+	"_note": "One main quest per chapter. A step completes when its flag is set — by a dialog set_flag, a room on_enter_flag, an item pickup (took_<id> / granted_<id>), or a cracked database (cracked_<id>).",
+	"quests": {
+		"q_demo": {
+			"name": "Find the Way Through",
+			"desc": "Talk to the guide, step into the study, and take what you find.",
+			"steps": [
+				{ "text": "Speak with the guide.", "flag": "talked_guide" },
+				{ "text": "Step into the study.", "flag": "reached_study" },
+				{ "text": "Take the brass key.", "flag": "took_brass_key" }
+			]
+		}
+	}
+}

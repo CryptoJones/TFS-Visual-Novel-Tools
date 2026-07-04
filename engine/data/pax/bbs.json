@@ -1,0 +1,6 @@
+{
+	"_note": "NET message-board content, shown alongside the news feed. Replace with your own.",
+	"messages": [
+		{ "to": "ALL", "from": "SYSOP", "body": "Welcome to the board. This is demo content for the NET terminal feature." }
+	]
+}

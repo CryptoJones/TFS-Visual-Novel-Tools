@@ -1,0 +1,25 @@
+{
+	"id": "guide",
+	"name": "The Guide",
+	"start": "hello",
+	"nodes": {
+		"hello": {
+			"text": "The guide inclines their head. \"Welcome. This small place is a demonstration — a working loop you can pull apart: rooms and exits, a conversation like this one, an item to carry, a save you can return to. When you're ready, the study lies east.\"",
+			"set_flag": "talked_guide",
+			"options": [
+				{ "text": "\"What am I looking for?\"", "next": "hint" },
+				{ "text": "\"Thank you.\"", "next": "bye" }
+			]
+		},
+		"hint": {
+			"text": "\"A key, on the desk in the study. Take it, and you'll have walked the whole engine — title to ending. After that, the rest is yours to build.\"",
+			"options": [
+				{ "text": "\"Understood.\"", "next": "bye" }
+			]
+		},
+		"bye": {
+			"text": "The guide steps aside and gestures east, patient as furniture.",
+			"options": []
+		}
+	}
+}

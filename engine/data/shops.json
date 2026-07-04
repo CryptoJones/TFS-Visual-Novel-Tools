@@ -1,0 +1,4 @@
+{
+	"_note": "Shops are optional. A room opens one with \"shop\": \"<id>\". A shop with \"buys\": true also purchases the player's sellable items. None in the demo.",
+	"shops": {}
+}

@@ -1,0 +1,19 @@
+{
+	"_note": "Demo rooms. Each room: name, desc, optional bg (a plate id -> assets/backgrounds_hd/<bg>.png), exits (west/north/south/east -> room id), and optional npcs, pickups, shop, net, matrix, on_enter_flag, requires_flag/locked_text. No bg here so the demo runs art-free.",
+	"start": "foyer",
+	"rooms": {
+		"foyer": {
+			"name": "Foyer",
+			"desc": "A dim entry hall with a cold hearth and a staircase going nowhere anyone remembers. A quiet figure — the guide — waits by the banister. A doorway opens to the east.",
+			"npcs": ["guide"],
+			"exits": { "east": "study" }
+		},
+		"study": {
+			"name": "Study",
+			"desc": "Walls of books gone soft with damp, and a writing desk with one locked drawer. On the blotter, catching what little light there is, lies a brass key.",
+			"on_enter_flag": "reached_study",
+			"pickups": [ { "item": "brass_key", "label": "Take the brass key" } ],
+			"exits": { "west": "foyer" }
+		}
+	}
+}
