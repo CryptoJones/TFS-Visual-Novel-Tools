@@ -12,26 +12,28 @@ Reads `data/*.json` + `assets/backgrounds_hd/*.png`, ships a **two-room demo** t
 out of the box, `validate_data` + `playthrough` green. Godot 4.6, export presets templated
 (binary name + bundle id placeholders). See `engine/README.md`.
 
-## 2. Config-drive the art-book generator (`tools/artbook/build_artbook.py`)
-Today its `BOOKS` dict hardcodes specific repo paths. Change it to take a config file /
-CLI args: `--repo`, `--title`, `--subtitle`, `--cover`, `--title-screen`, `--dedication`,
-`--accent`, `--out`. Then anyone can point it at their own project. Keep the art-only +
-dedication + full-bleed-cover features that already work.
+## 2. Config-drive the art-book generator (`tools/artbook/build_artbook.py`) — ✅ DONE
+The old hardcoded `BOOKS` map is gone. `tfs-vn artbook --config artbook.json` now
+drives repo/index paths, explicit plate lists, cover/title-screen art, dedication,
+accent, output path, and optional manifests. The legacy script remains as a wrapper.
 
-## 3. Build the GUI configurator (`tools/configurator/`)
-A small desktop app (tkinter or PyQt — dependency-light). Inputs: a folder of background
-plates + a scene/chapters config (or a wizard that builds one). Output: a scaffolded,
-ready-to-run Godot project — copies the `engine/` template, drops the plates into
-`assets/backgrounds_hd/`, writes the `data/*.json`. The "I already generated my art, just
-give me a game" one-click path. This is the token-saver.
+## 3. Build the GUI configurator (`tools/configurator/`) — ✅ DONE
+A dependency-light Tkinter app now collects project metadata, plate folders, rooms,
+and output path, then calls the same scaffold backend as the CLI. Generated projects
+copy the `engine/` template, copy plates into `assets/backgrounds_hd/`, write
+`data/*.json`, and can run the Godot validators.
 
-## 4. Write the prompt-craft guide (`docs/PROMPT-CRAFT.md`)
+## 4. Write the prompt-craft guide (`docs/PROMPT-CRAFT.md`) — ✅ DONE
 The book-agnostic slop-avoidance rules for local flux2 / ComfyUI plate generation:
 positive-only prompts (cfg 1 zeroes the negative), never name signs/posters/screens/"a
 title" (garbled text), never imply a person (body-horror), singularize plural objects,
 a separate exterior suffix so "blank smooth walls" doesn't hallucinate walls outdoors,
 and the tipped-furniture-backs trick for ransacked/complex rooms.
 
-## 5. Publish
+## 5. Harden packaging and examples
+Next polish lane: wheel packaging that embeds or locates the engine template outside a
+source checkout, richer wizard editing for branching exits/dialog, and release artifacts.
+
+## 6. Publish
 Create the public GitHub repo (needs CryptoJones's go), push, tag an initial release.
 Apache 2.0.

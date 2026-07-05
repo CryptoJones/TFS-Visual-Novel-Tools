@@ -37,16 +37,22 @@ godot --headless --path . --script res://tests/playthrough.gd     # reachability
 
 ## Make it yours
 
-1. **Content** lives entirely in `data/`:
+1. Use the toolkit CLI/wizard to generate the project:
+
+   ```sh
+   tfs-vn scaffold --config project.json --out ./build/my-game
+   ```
+
+2. **Content** lives entirely in `data/`:
    - `chapters.json` — the title (`game`), the `dedication` card text (empty =
      skip it), and the chapter list.
    - `data/rooms/<chapter>.json` — rooms, exits, npcs, pickups, flags.
    - `data/npcs/<id>.json` — branching dialog.
    - `quests.json`, `items.json`, `shops.json`, `data/pax/*.json`,
      `data/cyberspace/databases.json`.
-2. **Art** goes in `assets/backgrounds_hd/<bg>.png` (referenced by a room's
+3. **Art** goes in `assets/backgrounds_hd/<bg>.png` (referenced by a room's
    `"bg"`), `assets/ui/cover.png` (title cover), and `assets/audio/music/*.ogg`.
-3. **Branding**: rename `config/name` in `project.godot`, change the one accent
+4. **Branding**: rename `config/name` in `project.godot`, change the one accent
    color in `src/ui/UITheme.gd`, and set the export binary names + bundle id in
    `export_presets.cfg`.
 

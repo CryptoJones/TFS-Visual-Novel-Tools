@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tfs-visual-novel-tools"
+version = "0.1.0"
+description = "Reusable CLI and wizard tools for building Godot visual novels."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "CryptoJones" }]
+dependencies = [
+  "Pillow>=10",
+  "reportlab>=4",
+]
+
+[project.scripts]
+tfs-vn = "tfs_vn.cli:main"
+
+[tool.setuptools]
+packages = ["tfs_vn"]
