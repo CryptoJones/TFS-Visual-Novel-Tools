@@ -1113,15 +1113,20 @@ func _rebuild_buttons(r: Dictionary) -> void:
 	# Talk actions for NPCs in the room. A conversation you have already finished
 	# drops its button to save space; and an NPC that a LATER quest step needs stays
 	# hidden until it's the current objective — so you talk to people in quest order.
-	# The NPC the current step needs always stays reachable.
+	# The NPC the current step needs always stays reachable. EXCEPTION: an NPC whose
+	# dialog carries "repeat_until_flag" stays talkable (bypassing both rules) while
+	# that flag is unset — for repeatable gag/flavor lines the player can re-trigger.
 	var need_npc := _current_step_npc()
 	var later_npcs := _future_objective_npcs()
 	for npc in r.get("npcs", []):
 		var nid := str(npc)
-		if nid != need_npc and (GameState.has_flag("spoke_" + nid) or later_npcs.has(nid)):
+		var nd = _load_json(NPC_DIR + nid + ".json")
+		var repeat_flag := str(nd.get("repeat_until_flag", "")) if nd != null and typeof(nd) == TYPE_DICTIONARY else ""
+		var keep_talkable := repeat_flag != "" and not GameState.has_flag(repeat_flag)
+		if not keep_talkable and nid != need_npc and (GameState.has_flag("spoke_" + nid) or later_npcs.has(nid)):
 			continue
 		var b := Button.new()
-		b.text = "Talk: %s" % _npc_label(nid)
+		b.text = "Talk: %s" % (str(nd.get("name", nid)) if nd != null and typeof(nd) == TYPE_DICTIONARY else nid)
 		b.pressed.connect(_go_dialog.bind(nid))
 		_button_bar.add_child(b)
 	# Pickups (quest items lying in the world). Taken-state rides story_flags.
