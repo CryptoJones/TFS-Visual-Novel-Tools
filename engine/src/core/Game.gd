@@ -231,6 +231,20 @@ func _build_title_layer() -> void:
 	ver.add_theme_color_override("font_color", UITheme.TEXT_DIM)
 	_fsize(ver, 20)
 	_title_layer.add_child(ver)
+	# "Press any key" also means the mouse. Keys advance via _unhandled_input, but the
+	# root Control's default MOUSE_FILTER_STOP swallows mouse clicks before they reach
+	# there — so a full-screen transparent catcher grabs the click via gui_input and
+	# advances explicitly. Added last so it sits on top of the title art.
+	var catcher := Control.new()
+	catcher.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	catcher.mouse_filter = Control.MOUSE_FILTER_STOP
+	catcher.gui_input.connect(_on_title_click)
+	_title_layer.add_child(catcher)
+
+func _on_title_click(event: InputEvent) -> void:
+	if _state == State.TITLE and event is InputEventMouseButton and event.pressed:
+		_go_chapters()
+		get_viewport().set_input_as_handled()
 
 func _build_chapters_layer() -> void:
 	_chapters_layer = _full_control("ChapterSelect")
