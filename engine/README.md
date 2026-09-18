@@ -56,9 +56,10 @@ godot --headless --path . --script res://tests/playthrough.gd     # reachability
      `data/cyberspace/databases.json`.
 3. **Art** goes in `assets/backgrounds_hd/<bg>.png` (referenced by a room's
    `"bg"`), `assets/ui/cover.png` (title cover), and `assets/audio/music/*.ogg`.
-   The optional studio ident is `assets/ui/ronin48_games_studio.png`. The
-   scaffold empties `assets/ui/`, `assets/backgrounds_hd/` and
-   `assets/audio/music/`, so ship those files from your game repo.
+   The scaffold clears those three folders, so ship their contents from your game
+   repo. The one exception is the studio ident
+   (`assets/ui/ronin48_games_studio.png`), which every scaffold is seeded with —
+   replace it to use your own, or delete it to skip the ident card.
 4. **Branding**: rename `config/name` in `project.godot`, change the one accent
    color in `src/ui/UITheme.gd`, and set the export binary names + bundle id in
    `export_presets.cfg`.

@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from tfs_vn.scaffold import scaffold_project
+from tfs_vn.scaffold import STUDIO_IDENT, scaffold_project
 
 
 class ScaffoldTests(unittest.TestCase):
@@ -68,6 +68,31 @@ class ScaffoldTests(unittest.TestCase):
 
         self.assertIn("silver_key", items["items"])
         self.assertEqual(rooms["rooms"]["room"]["pickups"][0]["label"], "Take key")
+
+
+    def test_studio_ident_is_seeded_after_asset_wipe(self) -> None:
+        """The ident is studio branding, so it is re-seeded after the wipe that
+        clears the per-game asset folders — a new scaffold shows it with no
+        manual copying, while the other asset folders still start clean."""
+        config = {
+            "title": "Ident Test",
+            "chapters": [
+                {
+                    "id": "chapter",
+                    "rooms": [{"id": "room", "name": "Room", "desc": "A room."}],
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "game"
+            scaffold_project(config, out, config_dir=Path(tmp), run_validation=False)
+            ident = out / STUDIO_IDENT
+            ui_names = sorted(p.name for p in (out / "assets/ui").iterdir())
+            bg_names = sorted(p.name for p in (out / "assets/backgrounds_hd").iterdir())
+            # asserted inside the context: the temp tree is gone once it exits
+            self.assertTrue(ident.is_file(), f"studio ident not seeded at {STUDIO_IDENT}")
+            self.assertEqual(ui_names, [".gitkeep", STUDIO_IDENT.name])
+            self.assertEqual(bg_names, [".gitkeep"])
 
 
 if __name__ == "__main__":

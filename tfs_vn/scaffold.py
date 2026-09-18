@@ -24,6 +24,11 @@ from .validate import validate_project
 
 DIRECTIONS = ("west", "north", "south", "east")
 
+## Studio ident seeded into every scaffold. It is studio branding rather than
+## game art, so it is re-copied after the per-game asset folders are cleared and
+## every game shows the ident without copying the file in by hand.
+STUDIO_IDENT = Path("assets/ui/ronin48_games_studio.png")
+
 
 def scaffold_from_config(
     config_path: str | Path,
@@ -121,6 +126,13 @@ def _copy_engine(template: Path, out_dir: Path, force: bool) -> None:
             shutil.rmtree(p)
         p.mkdir(parents=True, exist_ok=True)
         (p / ".gitkeep").write_text("", encoding="utf-8")
+    # Re-seed the studio ident the wipe above just removed. Games may replace it
+    # with their own file; the engine skips the ident card when it is absent.
+    ident = template / STUDIO_IDENT
+    if ident.exists():
+        dst = out_dir / STUDIO_IDENT
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ident, dst)
 
 
 def _ignore_template(_dir: str, names: list[str]) -> set[str]:
