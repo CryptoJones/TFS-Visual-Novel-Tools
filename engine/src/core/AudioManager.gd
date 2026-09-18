@@ -10,6 +10,12 @@ const MUSIC_DIR := "res://assets/audio/music/"
 const FADE := 1.2          # crossfade seconds
 const MUSIC_DB := -8.0     # nominal playback level
 const CHAPTER_TRACKS := {}  # map your chapter ids to track names, e.g. {"ch01": "theme"}
+## Per-cue tempo (BPM), used to snap a randomised entry point to an 8-bar
+## hypermeasure so playback starts on a phrase boundary instead of mid-phrase.
+## Add your cues here, e.g. {"streets": 140.0, "mansion": 120.0}. A cue that is
+## absent still gets a randomised entry point, just not phrase-aligned.
+const TRACK_BPM := {}
+const ENTRY_BARS := 8
 
 signal track_changed(track)
 
@@ -66,12 +72,29 @@ func _load(track: String, loop_it := true) -> AudioStream:
 func _target_db() -> float:
 	return -80.0 if music_volume <= 0.005 else MUSIC_DB + linear_to_db(music_volume)
 
-func _crossfade_to(stream: AudioStream) -> void:
+## Randomised entry point (seconds) so returning to an area does not replay the
+## identical opening every visit. Snapped to an 8-bar hypermeasure when the cue
+## tempo is known, so playback still begins on a phrase boundary.
+func _random_entry(track: String, length: float) -> float:
+	if length <= 0.0:
+		return 0.0
+	var bpm := float(TRACK_BPM.get(track, 0.0))
+	if bpm <= 0.0:
+		return randf() * length
+	var hyper := 4.0 * 60.0 / bpm * ENTRY_BARS
+	var slots := int(length / hyper)
+	if slots <= 1:
+		return 0.0
+	return float(randi() % slots) * hyper
+
+func _crossfade_to(stream: AudioStream, entry := 0.0) -> void:
 	var prev := _active
 	var next := _b if _active == _a else _a
 	next.stream = stream
 	next.volume_db = -80.0
 	next.play()
+	if entry > 0.0:
+		next.seek(entry)
 	_active = next
 	var tw := create_tween()
 	tw.set_parallel(true)
@@ -93,7 +116,7 @@ func play(track: String) -> void:
 		return
 	_current = track
 	track_changed.emit(track)
-	_crossfade_to(stream)
+	_crossfade_to(stream, _random_entry(track, stream.get_length()))
 
 ## Play a list of tracks back-to-back, looping the list forever.
 func play_playlist(tracks: Array) -> void:
@@ -112,11 +135,12 @@ func play_playlist(tracks: Array) -> void:
 	_play_playlist_track()
 
 func _play_playlist_track() -> void:
-	var stream := _load(str(_playlist[_pl_idx]), false)
+	var track := str(_playlist[_pl_idx])
+	var stream := _load(track, false)
 	if stream == null:
 		return
-	_crossfade_to(stream)
-	track_changed.emit(str(_playlist[_pl_idx]))
+	_crossfade_to(stream, _random_entry(track, stream.get_length()))
+	track_changed.emit(track)
 
 func _on_finished(which: AudioStreamPlayer) -> void:
 	if not _pl_active or which != _active:

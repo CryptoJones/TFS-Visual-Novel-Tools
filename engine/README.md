@@ -10,8 +10,9 @@ JSON, and you have a game.
 
 ## What it does
 
-- **Title → chapter select → explore → dialog → menu** state machine, plus a
-  fade-in **dedication** card before the title.
+- **Studio ident → title → chapter select → explore → dialog → menu** state
+  machine, plus a fade-in **dedication** card before the title. The ident card
+  is skipped cleanly when its art is absent.
 - **Rooms + exits** with a fixed **W/N/S/E compass** (directions that aren't
   exits are dimmed, not hidden).
 - **Branching dialog**, an **inventory / shops / economy**, an optional
@@ -23,6 +24,9 @@ JSON, and you have a game.
   quicksave/quickload, and a Settings panel (music + autosave toggles).
 - A full-bleed **title cover** with the game name overlaid, and a quiet
   anti-tamper "void" room for hacked saves.
+- **Crossfading music** with per-area cues (a room's `music` key wins, then
+  shops, then the chapter's cue). Every cue opens at a **randomised,
+  hypermeasure-aligned entry point** so revisits don't replay the same opening.
 
 Everything degrades gracefully: a missing plate shows a tinted placeholder, a
 missing track plays silence.
@@ -52,6 +56,9 @@ godot --headless --path . --script res://tests/playthrough.gd     # reachability
      `data/cyberspace/databases.json`.
 3. **Art** goes in `assets/backgrounds_hd/<bg>.png` (referenced by a room's
    `"bg"`), `assets/ui/cover.png` (title cover), and `assets/audio/music/*.ogg`.
+   The optional studio ident is `assets/ui/ronin48_games_studio.png`. The
+   scaffold empties `assets/ui/`, `assets/backgrounds_hd/` and
+   `assets/audio/music/`, so ship those files from your game repo.
 4. **Branding**: rename `config/name` in `project.godot`, change the one accent
    color in `src/ui/UITheme.gd`, and set the export binary names + bundle id in
    `export_presets.cfg`.

@@ -207,7 +207,10 @@ func _collect_music_tracks(chapters: Dictionary) -> Dictionary:
 	for line in audio.split("\n"):
 		var t := line.strip_edges()
 		if t.begins_with("const CHAPTER_TRACKS"):
-			in_map = true
+			# A one-line empty map (`const CHAPTER_TRACKS := {}`) declares no
+			# entries; without this guard the scan runs on into unrelated code
+			# and reports phantom tracks such as "music"/"volume".
+			in_map = not t.contains("}")
 			continue
 		if in_map and t.begins_with("}"):
 			break
