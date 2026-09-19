@@ -1198,10 +1198,15 @@ func _rebuild_buttons(r: Dictionary) -> void:
 	qb2.text = "Quest"
 	qb2.pressed.connect(_open_quest_log)
 	_button_bar.add_child(qb2)
-	var invb := Button.new()
-	invb.text = "Items"
-	invb.pressed.connect(_open_inventory)
-	_button_bar.add_child(invb)
+	# Only offer the gear panel when there is something in it — a game with no
+	# items, software or skills should not show a dead button.
+	if not GameState.inventory.is_empty() \
+			or not GameState.software.is_empty() \
+			or not GameState.skills.is_empty():
+		var invb := Button.new()
+		invb.text = "Items"
+		invb.pressed.connect(_open_inventory)
+		_button_bar.add_child(invb)
 	# Chapter conclude — appears once the main quest is complete.
 	var ch := _current_chapter()
 	var qid := str(ch.get("quest", ""))
