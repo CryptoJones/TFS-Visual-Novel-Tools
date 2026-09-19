@@ -26,7 +26,10 @@ class ArtbookConfigTests(unittest.TestCase):
 
     def test_load_artbook_config_resolves_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            # The loader returns resolved absolute paths, and on macOS the
+            # tempdir is a symlink (/var -> /private/var), so resolve the
+            # expectation root too or the comparison can never match.
+            root = Path(tmp).resolve()
             config_path = root / "artbook.json"
             config_path.write_text(
                 json.dumps(

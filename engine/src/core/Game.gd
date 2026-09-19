@@ -8,7 +8,7 @@ extends Control
 ## Each chapter locks the player to one of the novel's PoV characters and ends
 ## when its main quest completes (outro pages, next chapter unlocks).
 
-enum State { TITLE, CHAPTERS, EXPLORE, DIALOG, MENU, DEDICATION }
+enum State { TITLE, CHAPTERS, EXPLORE, DIALOG, MENU, DEDICATION, SPLASH }
 
 # Preloaded (not class_name globals) so the game runs without a prebuilt
 # .godot global-class cache — i.e. on a fresh checkout before any editor open.
@@ -23,6 +23,15 @@ const UITheme = preload("res://src/ui/UITheme.gd")
 
 const NPC_DIR := "res://data/npcs/"
 const TITLE_COVER := "res://assets/ui/cover.png"
+## Studio ident, shown before everything else. Drop the card at
+## assets/ui/ronin48_games_studio.png; if it is missing the ident is skipped and
+## boot falls straight through to the dedication, so a scaffold never hangs on a
+## black screen. The fade/hold/fade beats are shared across our games so the
+## studio card reads identically everywhere.
+const STUDIO_SPLASH := "res://assets/ui/ronin48_games_studio.png"
+const SPLASH_FADE_IN := 1.0
+const SPLASH_HOLD := 5.0
+const SPLASH_FADE_OUT := 0.8
 ## Player preferences (autosave flag) — same file AudioManager keeps music in.
 const SETTINGS_PATH := "user://settings.cfg"
 const VIEW_X := 36
@@ -49,6 +58,9 @@ var _catalog: Catalog
 var _matrix: Matrix
 
 # Layers
+var _splash_layer: Control
+var _splash_logo: TextureRect
+var _splash_tween: Tween
 var _dedication_layer: Control
 var _dedication_tween: Tween
 var _title_layer: Control
@@ -111,13 +123,14 @@ func _ready() -> void:
 	_matrix.load_data()
 	AudioManager.track_changed.connect(_on_track_changed)
 	_load_prefs()
+	_build_splash_layer()
 	_build_dedication_layer()
 	_build_title_layer()
 	_build_chapters_layer()
 	_build_explore_layer()
 	_build_dialog_layer()
 	_build_menu_layer()
-	_go_dedication()
+	_go_splash()
 
 
 # ---------------------------------------------------------------- layer builders
@@ -132,6 +145,22 @@ func _full_control(name: String) -> Control:
 
 func _fsize(node: Control, size: int) -> void:
 	node.add_theme_font_size_override("font_size", size)
+
+func _build_splash_layer() -> void:
+	_splash_layer = _full_control("StudioSplash")
+	var bg := ColorRect.new()
+	bg.color = Color.BLACK
+	bg.size = Vector2(1920, 1080)
+	_splash_layer.add_child(bg)
+	_splash_logo = TextureRect.new()
+	_splash_logo.texture = Assets.load_texture(STUDIO_SPLASH)
+	_splash_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# The card is a composed image with its own lettering — letterbox it rather
+	# than cropping, so the wordmark never loses an edge.
+	_splash_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_splash_logo.size = Vector2(1920, 1080)
+	_splash_logo.modulate.a = 0.0
+	_splash_layer.add_child(_splash_logo)
 
 func _build_dedication_layer() -> void:
 	_dedication_layer = _full_control("Dedication")
@@ -951,11 +980,28 @@ func _conclude_chapter() -> void:
 # ---------------------------------------------------------------- state switches
 
 func _show_only(active: Control) -> void:
-	for layer in [_dedication_layer, _title_layer, _chapters_layer, _explore_layer, _dialog_layer, _menu_layer]:
+	for layer in [_splash_layer, _dedication_layer, _title_layer, _chapters_layer, _explore_layer, _dialog_layer, _menu_layer]:
 		layer.visible = (layer == active)
 
 ## Boot card: fade the Gibson dedication up, hold, fade out, then hand off to the
 ## title. Any key/click during it skips straight to the title (see _unhandled_input).
+## Studio ident: fade the card up, hold, fade out, then hand off to the
+## dedication. Any key/click during it skips ahead (see _unhandled_input).
+func _go_splash() -> void:
+	if _splash_logo.texture == null:
+		_go_dedication()
+		return
+	_state = State.SPLASH
+	_show_only(_splash_layer)
+	_splash_logo.modulate.a = 0.0
+	if _splash_tween != null and _splash_tween.is_valid():
+		_splash_tween.kill()
+	_splash_tween = create_tween()
+	_splash_tween.tween_property(_splash_logo, "modulate:a", 1.0, SPLASH_FADE_IN)
+	_splash_tween.tween_interval(SPLASH_HOLD)
+	_splash_tween.tween_property(_splash_logo, "modulate:a", 0.0, SPLASH_FADE_OUT)
+	_splash_tween.tween_callback(_go_dedication)
+
 func _go_dedication() -> void:
 	if _dedication_text.strip_edges() == "":
 		_go_title()
@@ -1171,10 +1217,15 @@ func _rebuild_buttons(r: Dictionary) -> void:
 	qb2.text = "Quest"
 	qb2.pressed.connect(_open_quest_log)
 	_button_bar.add_child(qb2)
-	var invb := Button.new()
-	invb.text = "Items"
-	invb.pressed.connect(_open_inventory)
-	_button_bar.add_child(invb)
+	# Only offer the gear panel when there is something in it — a game with no
+	# items, software or skills should not show a dead button.
+	if not GameState.inventory.is_empty() \
+			or not GameState.software.is_empty() \
+			or not GameState.skills.is_empty():
+		var invb := Button.new()
+		invb.text = "Items"
+		invb.pressed.connect(_open_inventory)
+		_button_bar.add_child(invb)
 	# Chapter conclude — appears once the main quest is complete.
 	var ch := _current_chapter()
 	var qid := str(ch.get("quest", ""))
@@ -1516,6 +1567,11 @@ func _end_dialog() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	match _state:
+		State.SPLASH:
+			if (event is InputEventKey and event.pressed) \
+					or (event is InputEventMouseButton and event.pressed):
+				_go_dedication()
+				get_viewport().set_input_as_handled()
 		State.DEDICATION:
 			if (event is InputEventKey and event.pressed) \
 					or (event is InputEventMouseButton and event.pressed):
