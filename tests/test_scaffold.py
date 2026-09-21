@@ -9,6 +9,49 @@ from tfs_vn.scaffold import STUDIO_IDENT, scaffold_project
 
 
 class ScaffoldTests(unittest.TestCase):
+    def test_require_scenes_makes_every_conversation_a_quest_objective(self) -> None:
+        def scene(npc_id: str, ends: bool = True) -> dict:
+            last = {"text": "The end.", "options": [] if ends else [{"text": "Again", "next": "a"}]}
+            return {"id": npc_id, "name": npc_id.title(), "start": "a", "nodes": {"a": last}}
+
+        def config(**extra) -> dict:
+            return {
+                "title": "Gate Test",
+                "chapters": [
+                    {
+                        "id": "one",
+                        "title": "One",
+                        "quest": {"id": "q_one", "name": "Q", "steps": [{"text": "Reach the vault.", "flag": "one_done"}]},
+                        "rooms": [
+                            {"id": "pier", "name": "Pier", "desc": ".", "npcs": [scene("lil")]},
+                            {"id": "club", "name": "Club", "desc": ".", "npcs": [scene("loop", ends=False)]},
+                            {"id": "vault", "name": "Vault", "desc": ".", "on_enter_flag": "one_done", "npcs": [scene("dan")]},
+                        ],
+                        **extra,
+                    }
+                ],
+            }
+
+        def steps(cfg: dict) -> list[str]:
+            with tempfile.TemporaryDirectory() as tmp:
+                out = Path(tmp) / "game"
+                scaffold_project(cfg, out, config_dir=Path(tmp), run_validation=False)
+                doc = json.loads((out / "data/quests.json").read_text(encoding="utf-8"))
+            return [step["flag"] for step in doc["quests"]["q_one"]["steps"]]
+
+        # off by default: an authored quest is left exactly as written
+        self.assertEqual(steps(config()), ["one_done"])
+        # on: one objective per conversation that can end, in room order, with the
+        # room-entry step just ahead of the scene in its room; a dialog that can
+        # never end is not made a requirement nobody could meet
+        self.assertEqual(steps(config(require_scenes=True)), ["heard_lil", "one_done", "heard_dan"])
+        # project-wide switch; a hand-authored heard_ step is never duplicated and
+        # sits with its room wherever the author listed it
+        wide = config()
+        wide["require_scenes"] = True
+        wide["chapters"][0]["quest"]["steps"].append({"text": "Sit with Lil.", "flag": "heard_lil"})
+        self.assertEqual(steps(wide), ["heard_lil", "one_done", "heard_dan"])
+
     def test_story_cards_borrow_plates_from_their_own_chapter(self) -> None:
         def chapter(cid: str, plates: list[str], **extra) -> dict:
             rooms = [{"id": f"{cid}_{p}", "name": p.title(), "desc": p, "bg": p} for p in plates]

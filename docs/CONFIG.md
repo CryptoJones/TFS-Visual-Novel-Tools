@@ -69,6 +69,17 @@ re-scaffolding never reshuffles the art, and the outro avoids the intro's plates
 while the chapter has enough to go round. A chapter with no plates stays
 art-less.
 
+Finishing a chapter:
+
+- `require_scenes`: `true` on the project or on one chapter makes every
+  conversation a quest objective. By default a chapter's quest is only what you
+  author (or "reach the last room"), so a reader can walk past every scene and
+  still conclude the chapter. With this on, the scaffolder adds one
+  `Talk: <npc> (<room>)` step per conversation, keyed to `heard_<npc id>` — a
+  flag the engine sets when a conversation reaches its end. NPCs whose dialog
+  can never end are skipped, and a step you already authored for a `heard_` flag
+  keeps your wording. Use it for kinetic novels, where the scenes are the story.
+
 Optional top-level objects:
 
 - `npcs`

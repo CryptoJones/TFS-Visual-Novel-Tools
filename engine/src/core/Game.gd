@@ -636,6 +636,7 @@ func _build_menu_layer() -> void:
 	panel.add_child(_menu_title)
 	_menu_info = Label.new()
 	_menu_info.size = Vector2(1800, 48)
+	_menu_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_menu_info.add_theme_color_override("font_color", UITheme.TEXT_DIM)
 	_fsize(_menu_info, 20)
 	panel.add_child(_menu_info)
@@ -658,7 +659,10 @@ func _menu_begin(title: String, info: String, img_path := "", big_art := false) 
 	# Above Large the header and body need the room more than the art does.
 	art_h -= roundi(maxf(0.0, _text_scale - 1.25) * 320.0)
 	var title_step := maxi(72, _line_h(32) + 6)
-	var info_step := maxi(60, _line_h(20) + 12)
+	# The info line wraps (a long POV blurb at a large Text Size would otherwise
+	# run off the right edge), so the list starts below however tall it lands.
+	var info_h := _text_h(_menu_info, info, 1800, 20)
+	var info_step := maxi(60, info_h + 12)
 	if img_path != "":
 		var t: Texture2D = Assets.load_texture(img_path)
 		_menu_img.texture = t
@@ -673,6 +677,7 @@ func _menu_begin(title: String, info: String, img_path := "", big_art := false) 
 	_menu_scroll.size = Vector2(1800, 1044 - (top + title_step + info_step))
 	_menu_title.text = title
 	_menu_info.text = info
+	_menu_info.size = Vector2(1800, info_h)
 	for c in _menu_list.get_children():
 		c.queue_free()
 	_menu_scroll.set_deferred("scroll_vertical", 0)
@@ -777,8 +782,11 @@ func _open_quest_log() -> void:
 		var steps := _quests.steps(qid)
 		var cur := _quests.current_step(GameState, qid)
 		for i in steps.size():
-			var mark := "✓" if i < cur else ("▸" if i == cur else "·")
-			_menu_label("  %s  %s" % [mark, str(steps[i].get("text", ""))],  i > cur)
+			# Steps can be finished out of order (scenes are free-roam), so a
+			# tick means "done", not "comes before the current step".
+			var done := _quests.step_done(GameState, steps[i])
+			var mark := "✓" if done else ("▸" if i == cur else "·")
+			_menu_label("  %s  %s" % [mark, str(steps[i].get("text", ""))],  not done and i != cur)
 	_menu_button("« Back", _go_explore)
 
 
@@ -838,6 +846,8 @@ func _resolve_flag_target(flag: String) -> Dictionary:
 			var nd = _load_json(NPC_DIR + nid + ".json")
 			if nd == null or typeof(nd) != TYPE_DICTIONARY:
 				continue
+			if flag == "heard_" + nid:
+				return {"room": rid2, "npc": nid, "action": "Talk to %s" % str(nd.get("name", nid))}
 			for node_id in nd.get("nodes", {}):
 				var node: Dictionary = nd["nodes"][node_id]
 				var g := str(node.get("grant", ""))
@@ -1706,6 +1716,11 @@ func _refresh_dialog() -> void:
 		if not GameState.has_flag(paid_flag):
 			GameState.set_flag(paid_flag)
 			GameState.credits = maxi(0, GameState.credits + cr)
+	# Hearing a scene out is itself a story beat: reaching the end of a
+	# conversation sets heard_<npc id>, so a quest can require it. Walking into
+	# a room is not the same as having played what happens there.
+	if _dialog.is_terminal(GameState):
+		GameState.set_flag("heard_" + _dialog_npc)
 	_check_quest()
 	for c in _dialog_options.get_children():
 		c.queue_free()
