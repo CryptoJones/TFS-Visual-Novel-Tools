@@ -58,6 +58,32 @@ Room fields:
 - `npcs`, `pickups`, `shop`, `net`, `matrix`, `music`
 - `on_enter_flag`, `requires_flag`, `locked_text`
 
+Chapter story cards (`intro` / `outro`, one string per card) each show a plate:
+
+- `intro_art`, `outro_art`: a plate id, or a list of them (one per card)
+- `art`: a chapter-wide fallback for both
+
+Leave them out and the scaffolder fills every card with a plate from that
+chapter's own rooms. The pick is random but seeded on the chapter id, so
+re-scaffolding never reshuffles the art, and the outro avoids the intro's plates
+while the chapter has enough to go round. A chapter with no plates stays
+art-less.
+
+Finishing a chapter:
+
+- `require_scenes`: `true` on the project or on one chapter makes every
+  conversation a quest objective. By default a chapter's quest is only what you
+  author (or "reach the last room"), so a reader can walk past every scene and
+  still conclude the chapter. With this on, the scaffolder adds one
+  `Talk: <npc> (<room>)` step per conversation, keyed to `heard_<npc id>` — a
+  flag the engine sets when a conversation reaches its end. NPCs whose dialog
+  can never end are skipped, and a step you already authored for a `heard_` flag
+  keeps your wording. Use it for kinetic novels, where the scenes are the story.
+  Because a reader could otherwise walk ahead of a required scene and strand
+  themselves, it also locks each room until the last scene of the room before it
+  has been heard (`requires_flag` + a "Not yet — talk first: …" `locked_text`)
+  and makes sure every room has an exit back. Authored locks and exits win.
+
 Optional top-level objects:
 
 - `npcs`
