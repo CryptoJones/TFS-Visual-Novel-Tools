@@ -58,6 +58,17 @@ Room fields:
 - `npcs`, `pickups`, `shop`, `net`, `matrix`, `music`
 - `on_enter_flag`, `requires_flag`, `locked_text`
 
+Chapter story cards (`intro` / `outro`, one string per card) each show a plate:
+
+- `intro_art`, `outro_art`: a plate id, or a list of them (one per card)
+- `art`: a chapter-wide fallback for both
+
+Leave them out and the scaffolder fills every card with a plate from that
+chapter's own rooms. The pick is random but seeded on the chapter id, so
+re-scaffolding never reshuffles the art, and the outro avoids the intro's plates
+while the chapter has enough to go round. A chapter with no plates stays
+art-less.
+
 Optional top-level objects:
 
 - `npcs`

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import random
 import shutil
 from typing import Any
 
@@ -178,6 +179,10 @@ def _generate_project_data(config: dict[str, Any], config_dir: Path) -> dict[str
             "start": start_room,
             "rooms": rooms,
         }
+        intro_pages = [str(x) for x in as_list(chapter.get("intro"), f"{chapter_id}.intro")]
+        outro_pages = [str(x) for x in as_list(chapter.get("outro"), f"{chapter_id}.outro")]
+        intro_art = _story_card_art(chapter, "intro_art", chapter_id, rooms, len(intro_pages), avoid=[])
+        outro_art = _story_card_art(chapter, "outro_art", chapter_id, rooms, len(outro_pages), avoid=intro_art)
         chapters_out.append(
             {
                 "id": chapter_id,
@@ -187,8 +192,10 @@ def _generate_project_data(config: dict[str, Any], config_dir: Path) -> dict[str
                 "pov_desc": str(chapter.get("pov_desc") or ""),
                 "rooms": rooms_path,
                 "quest": quest_id,
-                "intro": [str(x) for x in as_list(chapter.get("intro"), f"{chapter_id}.intro")],
-                "outro": [str(x) for x in as_list(chapter.get("outro"), f"{chapter_id}.outro")],
+                "intro": intro_pages,
+                "intro_art": intro_art,
+                "outro": outro_pages,
+                "outro_art": outro_art,
             }
         )
 
@@ -269,6 +276,44 @@ def _normalize_rooms(
             out["npcs"] = npcs
         rooms[rid] = out
     return rooms, next(iter(rooms))
+
+
+def _story_card_art(
+    chapter: dict[str, Any],
+    key: str,
+    chapter_id: str,
+    rooms: dict[str, Any],
+    pages: int,
+    avoid: list[str],
+) -> list[str]:
+    """One plate per intro/outro story card, as res:// paths the engine loads.
+
+    An explicit ``intro_art`` / ``outro_art`` (or chapter-wide ``art``) in the
+    config wins: a plate id or a list of them, one per card. Otherwise the cards
+    borrow plates from the chapter's own rooms, so a story card is never a bare
+    text panel once the chapter has art. The pick is random but seeded on the
+    chapter id, so re-scaffolding the same config never reshuffles the art, and
+    ``avoid`` keeps the outro off the intro's plates while the chapter has
+    enough to go round. The chosen plates are shown in room order.
+    """
+    if pages <= 0:
+        return []
+    explicit = chapter.get(key, chapter.get("art"))
+    if explicit:
+        chosen = [slugify(str(x), "plate") for x in (explicit if isinstance(explicit, list) else [explicit])]
+    else:
+        plates = list(dict.fromkeys(str(room["bg"]) for room in rooms.values() if room.get("bg")))
+        if not plates:
+            return []
+        taken = {Path(path).stem for path in avoid}
+        fresh = [plate for plate in plates if plate not in taken]
+        pool = fresh if len(fresh) >= min(pages, len(plates)) else plates
+        rng = random.Random(f"{chapter_id}:{key}")
+        chosen = sorted(rng.sample(pool, min(pages, len(pool))), key=plates.index)
+    # Fewer plates than cards: the last plate holds for the remaining cards,
+    # which is also what the engine does with a short list.
+    chosen += [chosen[-1]] * (pages - len(chosen))
+    return [f"res://assets/backgrounds_hd/{plate}.png" for plate in chosen[:pages]]
 
 
 def _normalize_exits(exits: dict[str, Any], id_map: dict[str, str]) -> dict[str, str]:
