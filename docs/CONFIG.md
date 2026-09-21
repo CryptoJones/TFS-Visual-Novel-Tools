@@ -79,6 +79,10 @@ Finishing a chapter:
   flag the engine sets when a conversation reaches its end. NPCs whose dialog
   can never end are skipped, and a step you already authored for a `heard_` flag
   keeps your wording. Use it for kinetic novels, where the scenes are the story.
+  Because a reader could otherwise walk ahead of a required scene and strand
+  themselves, it also locks each room until the last scene of the room before it
+  has been heard (`requires_flag` + a "Not yet — talk first: …" `locked_text`)
+  and makes sure every room has an exit back. Authored locks and exits win.
 
 Optional top-level objects:
 

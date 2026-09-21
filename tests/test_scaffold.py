@@ -32,19 +32,31 @@ class ScaffoldTests(unittest.TestCase):
                 ],
             }
 
+        built_rooms: dict = {}
+
         def steps(cfg: dict) -> list[str]:
             with tempfile.TemporaryDirectory() as tmp:
                 out = Path(tmp) / "game"
                 scaffold_project(cfg, out, config_dir=Path(tmp), run_validation=False)
                 doc = json.loads((out / "data/quests.json").read_text(encoding="utf-8"))
+                built_rooms.clear()
+                built_rooms.update(json.loads((out / "data/rooms/one.json").read_text(encoding="utf-8"))["rooms"])
             return [step["flag"] for step in doc["quests"]["q_one"]["steps"]]
 
         # off by default: an authored quest is left exactly as written
         self.assertEqual(steps(config()), ["one_done"])
+        self.assertNotIn("requires_flag", built_rooms["club"])
         # on: one objective per conversation that can end, in room order, with the
         # room-entry step just ahead of the scene in its room; a dialog that can
         # never end is not made a requirement nobody could meet
         self.assertEqual(steps(config(require_scenes=True)), ["heard_lil", "one_done", "heard_dan"])
+        # ...and the story must then be walked in order, or a reader who skips
+        # ahead of a required scene can strand themselves: each room is locked
+        # behind the previous room's scene and keeps a way back
+        self.assertEqual(built_rooms["club"]["requires_flag"], "heard_lil")
+        self.assertTrue(built_rooms["club"]["locked_text"])
+        self.assertNotIn("requires_flag", built_rooms["vault"])  # 'loop' can never end: no lock
+        self.assertEqual(built_rooms["vault"]["exits"].get("west"), "club")
         # project-wide switch; a hand-authored heard_ step is never duplicated and
         # sits with its room wherever the author listed it
         wide = config()
